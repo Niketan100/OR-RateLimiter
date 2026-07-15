@@ -42,11 +42,7 @@
 ## 📦 Installation
 
 ```bash
-npm install @yourusername/rate-limiter
-# or
-pnpm add @yourusername/rate-limiter
-# or
-yarn add @yourusername/rate-limiter
+still in progress
 ```
 
 **Peer Dependencies**
