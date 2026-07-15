@@ -1,0 +1,16 @@
+src/
+tests/
+examples/
+docs/
+scripts/
+coverage/
+node_modules/
+.env
+*.log
+tsconfig.json
+tsconfig.build.json
+jest.config.js
+.eslintrc.json
+.prettierrc
+.editorconfig
+.gitignore
