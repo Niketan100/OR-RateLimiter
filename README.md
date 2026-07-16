@@ -70,20 +70,11 @@ Perfect for:
 # 📦 Installation
 
 ```bash
-npm install or-rate-limiter
+npm install rate-limiter-oss
 ```
 
 or
 
-```bash
-pnpm add or-rate-limiter
-```
-
-or
-
-```bash
-yarn add or-rate-limiter
-```
 
 ### Peer Dependencies
 
@@ -91,11 +82,7 @@ yarn add or-rate-limiter
 npm install express
 ```
 
-Redis support:
 
-```bash
-npm install ioredis
-```
 
 ---
 
