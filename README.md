@@ -1,164 +1,358 @@
 # 🚦 OR RateLimiter
 
-> A production-ready, flexible, and lightweight rate limiting library for Express applications with pluggable storage backends.
+<p align="center">
+
+A production-ready, flexible, and highly configurable rate limiting library for Express applications with pluggable storage backends and multiple rate limiting algorithms.
+
+</p>
 
 <p align="center">
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-yellow?style=for-the-badge)
-![Node](https://img.shields.io/badge/node-%3E%3D14-green?style=for-the-badge)
+![Node](https://img.shields.io/badge/node-%3E%3D18-green?style=for-the-badge)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178C6?style=for-the-badge)
 
 </p>
 
-## ✨ Features
+---
 
-- ⚡ Fast and lightweight
-- 🛡️ Protects APIs against abuse and brute-force attacks
-- 🗄️ Supports Memory and Redis stores
-- 🔌 Easily extendable with custom stores
-- 📦 Express middleware
-- 📊 Standard `X-RateLimit-*` response headers
-- 🎯 Custom key generators and skip logic
-- 💙 Full TypeScript support
-- ✅ Tested and production ready
+# ✨ Why OR RateLimiter?
+
+Most rate limiters only support a single strategy.
+
+**OR RateLimiter** lets you choose the right algorithm for your application while keeping the API simple.
+
+Perfect for:
+
+- REST APIs
+- SaaS products
+- Authentication endpoints
+- Public APIs
+- Internal services
+- Microservices
 
 ---
 
-## 📚 Table of Contents
+# ✨ Features
+
+- ⚡ Extremely fast
+- 🔥 Multiple rate limiting algorithms
+- 🗄️ Memory & Redis support
+- 🔌 Pluggable custom storage
+- 🎯 Tier-based limits
+- 👤 Custom user resolution
+- 📦 Express middleware
+- 📊 Standard RateLimit headers
+- 💙 Full TypeScript support
+- ✅ Production ready
+- 🧪 Fully tested
+- 🪶 Lightweight with minimal overhead
+
+---
+
+# 📚 Table of Contents
 
 - Installation
 - Quick Start
+- Algorithms
 - Storage Backends
 - Configuration
 - Advanced Usage
-- API Reference
+- Response Headers
 - Performance
+- Roadmap
 - Contributing
 - License
 
 ---
 
-## 📦 Installation
+# 📦 Installation
 
 ```bash
-still in progress
+npm install or-rate-limiter
 ```
 
-**Peer Dependencies**
+or
 
-- express ^4.x
-- ioredis (only if using Redis)
+```bash
+pnpm add or-rate-limiter
+```
+
+or
+
+```bash
+yarn add or-rate-limiter
+```
+
+### Peer Dependencies
+
+```bash
+npm install express
+```
+
+Redis support:
+
+```bash
+npm install ioredis
+```
 
 ---
 
-## 🚀 Quick Start
+# 🚀 Quick Start
 
-js
+```javascript
 import express from "express";
-import { RateLimiter, MemoryStore } from "@yourusername/rate-limiter";
+import {
+  SmartRateLimiter,
+  MemoryStore
+} from "or-rate-limiter";
 
 const app = express();
 
-const limiter = new RateLimiter({
+const limiter = new SmartRateLimiter({
   store: new MemoryStore(),
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+
+  userResolver(req) {
+    return {
+      id: req.ip,
+      tier: "anonymous"
+    };
+  },
+
+  tiers: {
+    anonymous: {
+      limit: 10,
+      window: 60000,
+      algorithm: "sliding-window-counter"
+    }
+  }
 });
 
 app.use(limiter.middleware());
 
+app.listen(3000);
+```
 
 ---
 
-## 🗄️ Storage Backends
+# 👥 Tier Based Rate Limiting
 
-| Store | Recommended For |
-|-------|------------------|
-| MemoryStore | Development & Testing |
-| RedisStore | Production |
-| Custom Store | Custom databases/caches |
+Different users can have different limits.
+
+```javascript
+const limiter = new SmartRateLimiter({
+
+  userResolver(req) {
+
+    const apiKey = req.headers["x-api-key"];
+
+    if (apiKey === "premium-key") {
+      return {
+        id: apiKey,
+        tier: "premium"
+      };
+    }
+
+    return {
+      id: req.ip,
+      tier: "free"
+    };
+  },
+
+  tiers: {
+
+    premium: {
+      limit: 100,
+      window: 60000,
+      algorithm: "token-bucket",
+      burst: 20
+    },
+
+    free: {
+      limit: 20,
+      window: 60000,
+      algorithm: "sliding-window-counter"
+    }
+
+  }
+
+});
+```
 
 ---
 
-## ⚙️ Configuration
+# ⚙️ Supported Algorithms
+
+| Algorithm | Best For |
+|------------|----------|
+| Fixed Window | Simple applications |
+| Sliding Window Counter | General APIs |
+| Sliding Window Log | High accuracy |
+| Token Bucket | Bursty traffic |
+| Leaky Bucket | Smooth traffic |
+
+---
+
+# 🗄️ Storage Backends
+
+| Store | Development | Production |
+|---------|:----------:|:----------:|
+| MemoryStore | ✅ | ❌ |
+| RedisStore | ✅ | ✅ |
+| Custom Store | ✅ | ✅ |
+
+Example:
+
+```javascript
+new MemoryStore();
+```
+
+or
+
+```javascript
+new RedisStore({
+    client: redis
+});
+```
+
+---
+
+# ⚙️ Configuration
 
 | Option | Description | Default |
-|--------|-------------|---------|
+|----------|-------------|----------|
 | store | Storage backend | MemoryStore |
-| windowMs | Time window | 60000 |
-| max | Maximum requests | 5 |
-| message | Rate limit response | "Too many requests" |
-| statusCode | HTTP status | 429 |
-| keyGenerator | Client identifier | req.ip |
+| userResolver | Resolve current user | req.ip |
+| tiers | Tier configuration | Required |
+| headers | Send RateLimit headers | true |
+| skip | Skip limiter | false |
+| onLimitReached | Callback | undefined |
 
 ---
 
-## 📊 Response Headers
+# 📊 Response Headers
 
-http
+```http
 X-RateLimit-Limit
 X-RateLimit-Remaining
 X-RateLimit-Reset
 Retry-After
+```
 
+Example response
 
----
+```
+HTTP/1.1 429 Too Many Requests
 
-## 🎯 Advanced Usage
+Retry-After: 25
 
-- Different limiters for different routes
-- Custom key generators
-- Skip specific users
-- Custom handlers
-- Event callbacks
-- Skip successful or failed requests
-
----
-
-## 📈 Performance
-
-| Store | Requests/sec | Production |
-|-------|-------------:|:----------:|
-| Memory | ~50,000 | ❌ |
-| Redis | ~30,000 | ✅ |
+X-RateLimit-Limit: 20
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1712345678
+```
 
 ---
 
-## 🤝 Contributing
+# 🎯 Advanced Usage
 
-1. Fork the repository.
-2. Create a feature branch.
-3. Commit your changes.
-4. Push your branch.
-5. Open a Pull Request.
+## Skip Health Checks
 
----
-
-## 📄 License
-
-MIT
+```javascript
+skip: (req) => req.path === "/health"
+```
 
 ---
 
-## ⭐ Support
+## Custom Key Generator
 
-If you find this project useful, consider giving it a ⭐ on GitHub.
+```javascript
+userResolver(req) {
 
-> **Notes**
->
-> Replace all placeholders such as `@yourusername` with your actual npm package name before publishing.
-> 
-> For screenshots or demo GIFs, store them in:
->
+    return {
+        id: req.headers["x-api-key"],
+        tier: "premium"
+    };
 
-> assets/
-> ├── demo.gif
-> ├── architecture.png
-> └── benchmark.png
+}
+```
 
->
-> Then embed them like:
->
+---
 
-> ![Demo](assets/demo.gif)
+## Limit Reached Callback
+
+```javascript
+onLimitReached(user, result) {
+
+    console.log(`${user.id} exceeded the limit`);
+
+}
+```
+
+---
+
+# 📈 Performance
+
+| Store | Requests/sec |
+|---------|-------------:|
+| Memory | ~50,000 |
+| Redis | ~30,000 |
+
+Benchmarks were executed using Node.js with concurrent requests on a local machine.
+
+---
+
+# 🛣️ Roadmap
+
+- [x] Memory Store
+- [x] Redis Store
+- [x] Multiple Algorithms
+- [x] Tier Based Limits
+- [x] Custom User Resolver
+- [ ] Redis Cluster
+- [ ] Metrics Dashboard
+- [ ] Prometheus Support
+- [ ] Distributed Token Bucket
+- [ ] Rate Limiting Analytics
+
+---
+
+# 🤝 Contributing
+
+Contributions are always welcome.
+
+1. Fork the repository
+
+2. Create a feature branch
+
+```bash
+git checkout -b feature/amazing-feature
+```
+
+3. Commit your changes
+
+```bash
+git commit -m "Add amazing feature"
+```
+
+4. Push your branch
+
+```bash
+git push origin feature/amazing-feature
+```
+
+5. Open a Pull Request
+
+---
+
+# 📄 License
+
+Licensed under the MIT License.
+
+---
+
+# ⭐ Support
+
+If OR RateLimiter helps your project, consider giving the repository a ⭐ on GitHub.
+
+Open source survives because developers occasionally click one shiny star instead of opening another tab. A strange but effective ecosystem.
